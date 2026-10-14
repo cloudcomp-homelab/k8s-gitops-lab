@@ -1,6 +1,6 @@
 # ============================================================
-# HTTPROUTE - ARGO CD
-# http://argocd.localhost -> argocd-server
+# HTTPROUTE - ARGO CD (HTTPS)
+# https://argocd.localhost -> argocd-server
 # All API defaults are written out explicitly so Git matches
 # the live object exactly (no OutOfSync drift).
 # ============================================================
@@ -18,7 +18,7 @@ spec:
       kind: Gateway
       name: main-gateway
       namespace: traefik
-      sectionName: web
+      sectionName: websecure-argocd
   hostnames:
     - argocd.localhost
   rules:

@@ -1,0 +1,30 @@
+# ============================================================
+# HTTPROUTE - ARGO CD (HTTP -> HTTPS REDIRECT)
+# http://argocd.localhost -> 301 -> https://argocd.localhost
+# ============================================================
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: argocd-server-redirect
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: main-gateway
+      namespace: traefik
+      sectionName: web
+  hostnames:
+    - argocd.localhost
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
