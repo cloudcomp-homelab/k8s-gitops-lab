@@ -1,0 +1,46 @@
+# ============================================================
+# APPLICATION - TRAEFIK
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: traefik
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+
+  sources:
+    # 1. The Helm chart (fixed version)
+    - repoURL: https://traefik.github.io/charts
+      chart: traefik
+      targetRevision: 41.7.1
+      helm:
+        releaseName: traefik
+        valueFiles:
+          - $values/platform/traefik/values.yaml
+
+    # 2. This repo: values file
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      ref: values
+
+    # 3. This repo: own manifests (Gateway)
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      path: platform/traefik/manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: traefik
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

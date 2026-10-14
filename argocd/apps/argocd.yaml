@@ -1,0 +1,54 @@
+# ============================================================
+# APPLICATION - ARGO CD (SELF-MANAGED)
+# Argo CD manages its own installation from Git.
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  # No resources-finalizer on purpose: deleting this Application
+  # must never delete Argo CD itself.
+spec:
+  project: platform
+
+  sources:
+    # 1. The Helm chart (fixed version)
+    - repoURL: https://argoproj.github.io/argo-helm
+      chart: argo-cd
+      targetRevision: 10.10.3
+      helm:
+        releaseName: argocd
+        valueFiles:
+          - $values/platform/argocd/values.yaml
+
+    # 2. This repo: values file
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      ref: values
+
+    # 3. This repo: own manifests (HTTPRoute)
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      path: platform/argocd/manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    # The HTTPRoute needs the Gateway API CRDs from Traefik (wave 1):
+    # retry until they exist
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

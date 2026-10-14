@@ -1,0 +1,29 @@
+# ============================================================
+# ROOT APPLICATION (APP OF APPS)
+# The only manifest applied manually, once. It points Argo CD
+# to the argocd/ folder; everything else is managed from Git.
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+spec:
+  # "default" project: the platform/apps projects are created by this app
+  project: default
+
+  source:
+    repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+    targetRevision: main
+    path: argocd
+    directory:
+      recurse: true
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -1,0 +1,35 @@
+# ============================================================
+# TRAEFIK - HELM VALUES
+# Ingress layer based on the Kubernetes Gateway API.
+# ============================================================
+
+# Route traffic with the Gateway API (Gateway + HTTPRoute)
+providers:
+  kubernetesGateway:
+    enabled: true
+  # Legacy Ingress objects are not used in this platform
+  kubernetesIngress:
+    enabled: false
+
+# GatewayClass "traefik" - referenced by our own Gateway
+gatewayClass:
+  enabled: true
+  name: traefik
+
+# We define our own Gateway in manifests/gateway.yaml
+gateway:
+  enabled: false
+
+# Dashboard is exposed later via an HTTPRoute
+ingressRoute:
+  dashboard:
+    enabled: false
+
+# Exposed on the host (Rancher Desktop ServiceLB) on 80/443
+service:
+  type: LoadBalancer
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
