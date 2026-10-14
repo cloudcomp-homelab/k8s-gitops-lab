@@ -1,0 +1,35 @@
+# ============================================================
+# APPPROJECT - PLATFORM
+# Cluster-wide platform components (ingress, certificates,
+# secrets, policies, observability). Broad permissions.
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: Platform components managed by the platform team
+
+  # Allowed sources: this repo + the official Helm chart repositories
+  sourceRepos:
+    - https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+    - https://argoproj.github.io/argo-helm
+    - https://traefik.github.io/charts
+    - https://charts.jetstack.io
+    - https://bitnami-labs.github.io/sealed-secrets
+    - https://kyverno.github.io/kyverno/
+    - https://prometheus-community.github.io/helm-charts
+    - https://grafana.github.io/helm-charts
+
+  # Allowed destinations: any namespace on this cluster
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+
+  # Platform components install CRDs, ClusterRoles, webhooks, etc.
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"

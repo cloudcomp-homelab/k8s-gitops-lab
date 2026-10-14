@@ -1,0 +1,33 @@
+# ============================================================
+# ARGO CD - HELM VALUES
+# ============================================================
+global:
+  domain: argocd.localhost
+
+configs:
+  params:
+    # TLS is terminated at the ingress controller (added later)
+    server.insecure: true
+
+# Not needed: we log in with the local admin account
+dex:
+  enabled: false
+
+# Keep resource usage low on a single-node lab cluster
+controller:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+repoServer:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+
+server:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi

@@ -1,0 +1,29 @@
+# ============================================================
+# APPPROJECT - APPS
+# Workloads running on the platform. Restricted permissions:
+# own repo only, own namespaces only, no cluster-wide objects
+# except their namespace.
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: apps
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: Application workloads
+
+  # Allowed sources: this repo only
+  sourceRepos:
+    - https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+
+  # Allowed destinations: one namespace per app
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: homarr
+
+  # Apps may only create their own namespace, nothing else cluster-wide
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace

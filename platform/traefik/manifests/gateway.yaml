@@ -1,0 +1,23 @@
+# ============================================================
+# GATEWAY - MAIN ENTRY POINT
+# The "front door" of the cluster. Apps attach to it with an
+# HTTPRoute in their own namespace.
+# ============================================================
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: main-gateway
+  namespace: traefik
+  annotations:
+    # The Gateway API CRDs are installed in the same sync
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: web
+      protocol: HTTP
+      # Port of Traefik's "web" entry point (exposed as 80)
+      port: 8000
+      allowedRoutes:
+        namespaces:
+          from: All
