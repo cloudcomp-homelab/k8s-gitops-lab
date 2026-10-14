@@ -1,0 +1,52 @@
+# ============================================================
+# APPLICATION - CERT-MANAGER
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+
+  sources:
+    # 1. The Helm chart (fixed version)
+    - repoURL: https://charts.jetstack.io
+      chart: cert-manager
+      targetRevision: v1.21.2
+      helm:
+        releaseName: cert-manager
+        valueFiles:
+          - $values/platform/cert-manager/values.yaml
+
+    # 2. This repo: values file
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      ref: values
+
+    # 3. This repo: own manifests (issuers and lab root CA)
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      path: platform/cert-manager/manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

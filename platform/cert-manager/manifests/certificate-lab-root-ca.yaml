@@ -1,0 +1,26 @@
+# ============================================================
+# CERTIFICATE - LAB ROOT CA
+# Root certificate of the lab CA, signed by itself.
+# Stored in secret "lab-root-ca" in the cert-manager namespace.
+# ============================================================
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lab-root-ca
+  namespace: cert-manager
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  isCA: true
+  commonName: Cloudcomp Lab Root CA
+  secretName: lab-root-ca
+  duration: 87600h      # 10 years
+  renewBefore: 720h     # 30 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: selfsigned-bootstrap
