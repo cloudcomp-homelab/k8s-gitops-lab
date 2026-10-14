@@ -1,6 +1,8 @@
 # ============================================================
 # HTTPROUTE - ARGO CD
 # http://argocd.localhost -> argocd-server
+# All API defaults are written out explicitly so Git matches
+# the live object exactly (no OutOfSync drift).
 # ============================================================
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -12,12 +14,21 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   parentRefs:
-    - name: main-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: main-gateway
       namespace: traefik
       sectionName: web
   hostnames:
     - argocd.localhost
   rules:
-    - backendRefs:
-        - name: argocd-server
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: argocd-server
           port: 80
+          weight: 1
