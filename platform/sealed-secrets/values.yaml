@@ -1,0 +1,11 @@
+# ============================================================
+# SEALED SECRETS - HELM VALUES
+# ============================================================
+
+# Fixed name: kubeseal looks for "sealed-secrets-controller"
+fullnameOverride: sealed-secrets-controller
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
