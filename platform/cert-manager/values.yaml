@@ -1,0 +1,31 @@
+# ============================================================
+# CERT-MANAGER - HELM VALUES
+# ============================================================
+
+# Install and keep the CRDs (Certificate, Issuer, ...)
+crds:
+  enabled: true
+  keep: true
+
+# Issue certificates for Gateway API listeners
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  enableGatewayAPI: true
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+
+webhook:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+
+cainjector:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
