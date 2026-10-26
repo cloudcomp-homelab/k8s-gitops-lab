@@ -1,0 +1,13 @@
+# ============================================================
+# GITLEAKS CONFIGURATION
+# ============================================================
+[extend]
+useDefault = true
+
+# SealedSecrets contain encrypted data only: safe to commit.
+# The high-entropy values would otherwise be reported as secrets.
+[allowlist]
+description = "Sealed Secrets are encrypted and safe to commit"
+paths = [
+  '''sealedsecret-.*\.yaml$''',
+]

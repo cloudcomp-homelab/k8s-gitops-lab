@@ -1,0 +1,15 @@
+# ============================================================
+# YAMLLINT CONFIGURATION
+# ============================================================
+extends: default
+
+rules:
+  # Kubernetes manifests usually start without "---"
+  document-start: disable
+  # Long lines are common in Kubernetes (URLs, CEL expressions)
+  line-length: disable
+  # "on:" in GitHub Actions is a key, not a boolean
+  truthy:
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1

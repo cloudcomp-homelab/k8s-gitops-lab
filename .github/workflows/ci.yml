@@ -1,0 +1,95 @@
+# ============================================================
+# CI - LINT, SCHEMA VALIDATION & SECRET SCAN
+# Runs on every pull request to main. No cluster access needed.
+# ============================================================
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  KUBECONFORM_VERSION: v0.7.0
+  GITLEAKS_VERSION: v8.21.2
+
+jobs:
+  # ============================================================
+  # JOB 1 - YAML LINT
+  # ============================================================
+  yamllint:
+    name: YAML lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install yamllint
+        run: pip install --quiet yamllint
+
+      - name: yamllint
+        run: yamllint --format github .
+
+  # ============================================================
+  # JOB 2 - KUBERNETES SCHEMA VALIDATION
+  # ============================================================
+  kubeconform:
+    name: Kubernetes schema validation
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install kubeconform
+        run: |
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz -C /usr/local/bin kubeconform
+          kubeconform -v
+
+      - name: Validate manifests
+        run: |
+          # Kubernetes objects only: Applications/projects, bootstrap and
+          # own manifests. Helm values.yaml files are not Kubernetes objects.
+          FILES=$( { find bootstrap argocd -name '*.yaml'; find platform -path '*/manifests/*.yaml'; } | sort )
+          echo "$FILES"
+          kubeconform \
+            -strict \
+            -summary \
+            -output text \
+            -ignore-missing-schemas \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            $FILES
+
+  # ============================================================
+  # JOB 3 - SECRET SCAN (Gitleaks) + publish report
+  # ============================================================
+  gitleaks:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write   # required to upload the report to Code scanning
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks scan
+        run: |
+          docker run --rm -v "$GITHUB_WORKSPACE:/repo" "zricethezav/gitleaks:${GITLEAKS_VERSION}" \
+            git /repo --config /repo/.gitleaks.toml \
+            --report-format sarif --report-path /repo/gitleaks.sarif --exit-code 1
+
+      - name: Upload report to Code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
