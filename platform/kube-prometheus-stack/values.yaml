@@ -1,0 +1,107 @@
+# ============================================================
+# KUBE-PROMETHEUS-STACK - HELM VALUES
+# Prometheus, Grafana, Alertmanager, node-exporter and
+# kube-state-metrics. Tuned for a single-node k3s lab.
+# ============================================================
+
+crds:
+  enabled: true
+
+# k3s runs these components inside the k3s binary: there are no
+# separate endpoints to scrape, so disable them (avoids targets
+# that are always down and false alerts)
+kubeEtcd:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+# ------------------------------------------------------------
+# GRAFANA
+# ------------------------------------------------------------
+grafana:
+  # Admin credentials from the SealedSecret (never in plain text)
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+
+  # Exposed via the Gateway API (HTTPRoute in manifests/)
+  ingress:
+    enabled: false
+
+  grafana.ini:
+    server:
+      root_url: https://grafana.localhost
+
+  defaultDashboardsTimezone: Europe/Amsterdam
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+# ------------------------------------------------------------
+# PROMETHEUS
+# ------------------------------------------------------------
+prometheus:
+  prometheusSpec:
+    # Short retention: lab cluster on a laptop
+    retention: 2d
+
+    # Discover ServiceMonitors/PodMonitors/rules in all namespaces,
+    # not only those created by this Helm release
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 512Mi
+      limits:
+        memory: 1Gi
+
+# ------------------------------------------------------------
+# ALERTMANAGER
+# ------------------------------------------------------------
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        memory: 64Mi
+
+# ------------------------------------------------------------
+# OPERATOR AND EXPORTERS
+# ------------------------------------------------------------
+prometheusOperator:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 128Mi
+
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 64Mi

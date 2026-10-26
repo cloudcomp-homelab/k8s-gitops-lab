@@ -41,3 +41,18 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+
+    # HTTPS - Grafana
+    - name: websecure-grafana
+      protocol: HTTPS
+      port: 8443
+      hostname: grafana.localhost
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: grafana-localhost-tls
+      allowedRoutes:
+        namespaces:
+          from: All
