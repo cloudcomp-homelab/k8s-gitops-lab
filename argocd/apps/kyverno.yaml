@@ -1,0 +1,43 @@
+# ============================================================
+# APPLICATION - KYVERNO (POLICY ENGINE)
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    # Compare with server-side defaults applied (prevents drift)
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+
+  sources:
+    # 1. The Helm chart (fixed version)
+    - repoURL: https://kyverno.github.io/kyverno/
+      chart: kyverno
+      targetRevision: 3.9.2
+      helm:
+        releaseName: kyverno
+        valueFiles:
+          - $values/platform/kyverno/values.yaml
+
+    # 2. This repo: values file
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

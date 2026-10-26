@@ -1,0 +1,15 @@
+# ============================================================
+# KYVERNO POLICIES - HELM VALUES
+# Official Kubernetes Pod Security Standards (PSS)
+# ============================================================
+
+# "baseline" blocks known privilege escalations (privileged
+# containers, host namespaces, hostPath, ...). "restricted" is
+# stricter and is the next step once all workloads comply.
+podSecurityStandard: baseline
+
+# Report only - nothing is blocked yet (switch to Enforce later)
+validationFailureAction: Audit
+
+# If Kyverno is unavailable, do not block the cluster
+failurePolicy: Ignore
