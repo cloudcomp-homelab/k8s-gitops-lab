@@ -1,0 +1,33 @@
+# ============================================================
+# KYVERNO - HELM VALUES (POLICY ENGINE)
+# ============================================================
+
+# Single-node lab cluster: one replica per controller, low requests
+admissionController:
+  replicas: 1
+  container:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+backgroundController:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+cleanupController:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+
+reportsController:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi

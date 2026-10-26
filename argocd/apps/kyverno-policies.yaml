@@ -1,0 +1,55 @@
+# ============================================================
+# APPLICATION - KYVERNO POLICIES
+# Official Pod Security Standards + own policies
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno-policies
+  namespace: argocd
+  annotations:
+    # After the Kyverno engine (wave 1)
+    argocd.argoproj.io/sync-wave: "2"
+    # Kyverno adds defaults to policies - compare server-side
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+
+  sources:
+    # 1. The Helm chart (fixed version, same as the engine)
+    - repoURL: https://kyverno.github.io/kyverno/
+      chart: kyverno-policies
+      targetRevision: 3.9.2
+      helm:
+        releaseName: kyverno-policies
+        valueFiles:
+          - $values/platform/kyverno-policies/values.yaml
+
+    # 2. This repo: values file
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      ref: values
+
+    # 3. This repo: own policies
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      path: platform/kyverno-policies/manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
