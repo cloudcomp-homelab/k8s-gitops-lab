@@ -1,5 +1,7 @@
 # k8s-gitops-lab
 
+[![ci](https://github.com/cloudcomp-homelab/k8s-gitops-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/cloudcomp-homelab/k8s-gitops-lab/actions/workflows/ci.yml)
+
 Kubernetes platform managed entirely with **GitOps (Argo CD)**: Gateway API ingress, automatic TLS, encrypted secrets in Git, policy enforcement and observability.
 
 Everything in the cluster is declared in this repository. A change is a pull request; once it is merged, Argo CD applies it. There are no manual `kubectl apply` or `helm upgrade` commands after the one-time bootstrap.
@@ -149,6 +151,17 @@ Sync waves make sure dependencies exist before they are used:
 | 2 | Kyverno policies and exceptions |
 | 3 | kube-prometheus-stack |
 
+### CI and branch protection
+Every pull request runs three checks in GitHub Actions; no cluster access is needed:
+
+| Check | What it catches |
+|---|---|
+| **YAML lint** | Syntax, indentation, duplicate keys, trailing whitespace, missing final newline |
+| **Kubernetes schema validation** | Invalid objects and unknown fields (`kubeconform -strict`), including Argo CD, Gateway API, cert-manager and Sealed Secrets CRDs |
+| **Secret scan (Gitleaks)** | Accidentally committed secrets in the full Git history; results are published to GitHub Code scanning. SealedSecrets are allowlisted because they are encrypted |
+
+The `main` branch is protected by a ruleset: changes only through a pull request, all three checks green and up to date, squash merge only, no force pushes and no deletion. Because `main` is what Argo CD deploys, nothing reaches the cluster without passing CI.
+
 ### Not in this lab
 Rancher Desktop's k3s has a built-in CNI (Flannel) and load balancer (ServiceLB) that cannot be replaced. **Cilium** and **MetalLB** are used in my homelab cluster, not in this lab.
 
@@ -168,7 +181,8 @@ k8s-gitops-lab/
 │   │   ├── values.yaml                # Helm values
 │   │   └── manifests/                 # own Kubernetes objects (routes, issuers, policies, ...)
 │   └── sealed-secrets/pub-cert.pem    # public key for kubeseal
-└── apps/                              # workloads (project "apps")
+├── apps/                              # workloads (project "apps")
+└── .github/workflows/ci.yml           # pull request checks
 ```
 
 **Conventions**
@@ -230,8 +244,9 @@ Change it after the first login and delete the `argocd-initial-admin-secret` sec
 
 - [ ] Loki – logs in Grafana
 - [ ] Homarr – first workload in the `apps` project
-- [ ] CI – manifest validation (kubeconform, Kyverno CLI) on every pull request
-- [ ] Ruleset on `main`
+- [x] CI – YAML lint, Kubernetes schema validation (kubeconform) and secret scan (Gitleaks) on every pull request
+- [x] Ruleset on `main` – pull request and green CI required, no force pushes or deletion
+- [ ] Kyverno CLI tests for own policies in CI
 - [ ] Memory limits for all platform charts, then `require-requests-limits` to Enforce
 - [ ] Pod Security Standards: from `baseline` to `restricted`
 
