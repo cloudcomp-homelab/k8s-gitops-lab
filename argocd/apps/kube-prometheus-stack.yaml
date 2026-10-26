@@ -1,0 +1,56 @@
+# ============================================================
+# APPLICATION - KUBE-PROMETHEUS-STACK (MONITORING)
+# ============================================================
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kube-prometheus-stack
+  namespace: argocd
+  annotations:
+    # After Kyverno policies/exceptions (wave 2)
+    argocd.argoproj.io/sync-wave: "3"
+    # Large chart with webhooks and CRDs - compare server-side
+    argocd.argoproj.io/compare-options: ServerSideDiff=true
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+
+  sources:
+    # 1. The Helm chart (fixed version)
+    - repoURL: https://prometheus-community.github.io/helm-charts
+      chart: kube-prometheus-stack
+      targetRevision: 92.13.1
+      helm:
+        releaseName: kube-prometheus-stack
+        valueFiles:
+          - $values/platform/kube-prometheus-stack/values.yaml
+
+    # 2. This repo: values file
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      ref: values
+
+    # 3. This repo: own manifests (SealedSecret, HTTPRoutes)
+    - repoURL: https://github.com/cloudcomp-homelab/k8s-gitops-lab.git
+      targetRevision: main
+      path: platform/kube-prometheus-stack/manifests
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # Required: the Prometheus CRDs are too large for client-side apply
+      - ServerSideApply=true
+    retry:
+      limit: 10
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m
