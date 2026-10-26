@@ -2,6 +2,13 @@
 # KYVERNO - HELM VALUES (POLICY ENGINE)
 # ============================================================
 
+# Policy exceptions are only accepted from the kyverno namespace,
+# so only platform admins can grant them
+features:
+  policyExceptions:
+    enabled: true
+    namespace: kyverno
+
 # Single-node lab cluster: one replica per controller, low requests
 admissionController:
   replicas: 1

@@ -8,8 +8,9 @@
 # stricter and is the next step once all workloads comply.
 podSecurityStandard: baseline
 
-# Report only - nothing is blocked yet (switch to Enforce later)
-validationFailureAction: Audit
+# Block violations. Required exceptions are declared explicitly
+# as PolicyExceptions in manifests/.
+validationFailureAction: Enforce
 
 # If Kyverno is unavailable, do not block the cluster
 failurePolicy: Ignore
