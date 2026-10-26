@@ -1,0 +1,41 @@
+# ============================================================
+# POLICYEXCEPTION - SERVICELB (RANCHER DESKTOP / K3S)
+# ServiceLB (svclb-*) publishes LoadBalancer services on the
+# host. It needs host ports, NET_ADMIN and ip_forward by
+# design. Scoped to exactly these three policies and only to
+# svclb workloads in kube-system.
+# ============================================================
+apiVersion: policies.kyverno.io/v1
+kind: PolicyException
+metadata:
+  name: allow-servicelb
+  namespace: kyverno
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  policyRefs:
+    - name: disallow-capabilities
+      kind: ValidatingPolicy
+    - name: disallow-host-ports
+      kind: ValidatingPolicy
+    - name: restrict-sysctls
+      kind: ValidatingPolicy
+
+  # Only svclb workloads in kube-system
+  matchConditions:
+    - name: servicelb-in-kube-system
+      expression: >-
+        object.metadata.namespace == 'kube-system' &&
+        (
+          (has(object.metadata.labels) &&
+           'svccontroller.k3s.cattle.io/svcname' in object.metadata.labels) ||
+          object.metadata.name.startsWith('svclb-')
+        )
+
+  # Show as "skip" in PolicyReports, so the exception stays visible
+  reportResult: skip
+
+  properties:
+    reason: k3s ServiceLB needs hostPort, NET_ADMIN and ip_forward to expose LoadBalancer services on the host
+    scope: kube-system/svclb-*
+    approved-by: platform-team
