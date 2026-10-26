@@ -1,10 +1,11 @@
 # ============================================================
-# CLUSTERPOLICY - REQUIRE REQUESTS AND LIMITS
+# VALIDATINGPOLICY - REQUIRE REQUESTS AND LIMITS
 # Every container must declare CPU/memory requests and a
 # memory limit, so one workload cannot starve the node.
+# CEL-based policy (policies.kyverno.io/v1).
 # ============================================================
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: require-requests-limits
   annotations:
@@ -16,29 +17,39 @@ metadata:
       limit, to protect the node from resource exhaustion.
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
-  background: true
-  rules:
-    - name: validate-requests-limits
-      match:
-        any:
-          - resources:
-              kinds:
-                - Pod
-      exclude:
-        any:
-          - resources:
-              namespaces:
-                - kube-system
-                - kyverno
-      validate:
-        failureAction: Audit
-        message: "CPU and memory requests and a memory limit are required."
-        pattern:
-          spec:
-            containers:
-              - resources:
-                  requests:
-                    cpu: "?*"
-                    memory: "?*"
-                  limits:
-                    memory: "?*"
+  # Report only - switch to [Deny] to block
+  validationActions:
+    - Audit
+
+  # Also evaluate existing resources (PolicyReports)
+  evaluation:
+    background:
+      enabled: true
+
+  # Which objects: Pods, except in system namespaces
+  matchConstraints:
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kube-system
+            - kyverno
+
+  # The rule (CEL): true = compliant, false = violation
+  validations:
+    - expression: >-
+        object.spec.containers.all(c,
+          has(c.resources) &&
+          has(c.resources.requests) &&
+          'cpu' in c.resources.requests &&
+          'memory' in c.resources.requests &&
+          has(c.resources.limits) &&
+          'memory' in c.resources.limits
+        )
+      message: "CPU and memory requests and a memory limit are required."
